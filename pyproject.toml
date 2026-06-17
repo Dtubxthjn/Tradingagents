@@ -54,4 +54,4 @@ filterwarnings = [
 ]
 
 [tool.vercel]
-entrypoint = "cli.main:app"
+entrypoint = "web.app:app"
