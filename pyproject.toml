@@ -53,5 +53,3 @@ filterwarnings = [
     "ignore::DeprecationWarning",
 ]
 
-[tool.vercel]
-entrypoint = "web.app:app"
