@@ -7,8 +7,8 @@ services:
     envVars:
       - key: APP_PASSWORD
         sync: false
-      - key: OPENROUTER_API_KEY
+      - key: GROQ_API_KEY
         sync: false
       - key: ANALYSIS_MODEL
-        value: openai/gpt-4o-mini
+        value: llama-3.3-70b-versatile
     healthCheckPath: /login

@@ -326,11 +326,11 @@ def fetch_financial_data(ticker: str) -> dict:
 def call_llm(system_prompt: str, user_message: str) -> dict | None:
     from openai import OpenAI
     client = OpenAI(
-        api_key=os.environ.get("OPENROUTER_API_KEY"),
-        base_url="https://openrouter.ai/api/v1",
+        api_key=os.environ.get("GROQ_API_KEY"),
+        base_url="https://api.groq.com/openai/v1",
     )
     resp = client.chat.completions.create(
-        model=os.environ.get("ANALYSIS_MODEL", "openai/gpt-4o-mini"),
+        model=os.environ.get("ANALYSIS_MODEL", "llama-3.3-70b-versatile"),
         messages=[
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": user_message},
