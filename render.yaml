@@ -1,0 +1,16 @@
+services:
+  - type: web
+    name: stock-analyzer
+    runtime: python
+    repo: https://github.com/Dtubxthjn/Tradingagents
+    branch: main
+    buildCommand: pip install -r requirements-web.txt
+    startCommand: python web/app.py
+    envVars:
+      - key: APP_PASSWORD
+        sync: false
+      - key: OPENROUTER_API_KEY
+        sync: false
+      - key: ANALYSIS_MODEL
+        value: openai/gpt-4o-mini
+    healthCheckPath: /

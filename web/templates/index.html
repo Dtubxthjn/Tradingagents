@@ -3,525 +3,412 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>TradingAgents — AI Trading Analysis</title>
+  <title>Stock Analyzer — AI-Powered Equity Research</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
-    tailwind.config = {
-      darkMode: 'class',
-      theme: {
-        extend: {
-          colors: {
-            dark: { 900: '#0a0a0f', 800: '#0d0d16', 700: '#12121e', 600: '#1a1a2e', 500: '#252540' },
-            accent: { green: '#00f5a0', red: '#ff4060', blue: '#4a9eff', gold: '#ffd700', purple: '#a855f7' }
-          }
-        }
-      }
-    }
+    tailwind.config = { darkMode: 'class', theme: { extend: { colors: { dark: { 900: '#0a0a0f', 800: '#0d0d16', 700: '#12121e', 600: '#1a1a2e', 500: '#252540' }, accent: { green: '#00f5a0', red: '#ff4060', blue: '#4a9eff', gold: '#ffd700', purple: '#a855f7' } } } } }
   </script>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body { font-family: 'Inter', sans-serif; background: #0a0a0f; color: #e0e0e0; min-height: 100vh; }
     .glass { background: rgba(13,13,22,0.85); backdrop-filter: blur(24px); border: 1px solid rgba(255,255,255,0.06); }
     .glass-light { background: rgba(18,18,30,0.7); border: 1px solid rgba(255,255,255,0.05); }
-    .hover-glow:hover { border-color: rgba(74,158,255,0.3); box-shadow: 0 0 20px rgba(74,158,255,0.05); }
     .gradient-text { background: linear-gradient(135deg, #4a9eff, #00f5a0); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-    .card { @apply glass rounded-2xl p-5 transition-all duration-300 hover-glow; }
-    .card-compact { @apply glass rounded-xl p-4 transition-all duration-200 hover-glow; }
-    .btn-primary { background: linear-gradient(135deg, #4a9eff, #3a7bdd); color: white; padding: 12px 32px; border-radius: 12px; font-weight: 600; border: none; cursor: pointer; transition: all 0.3s; }
+    .btn-primary { background: linear-gradient(135deg, #4a9eff, #3a7bdd); color: white; padding: 10px 28px; border-radius: 12px; font-weight: 600; border: none; cursor: pointer; transition: all 0.3s; font-size: 14px; }
     .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 4px 24px rgba(74,158,255,0.35); }
     .btn-primary:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
-    .btn-secondary { @apply glass rounded-xl px-4 py-2 text-sm font-medium cursor-pointer transition-all; }
-    .btn-secondary:hover { background: rgba(74,158,255,0.12); }
-    .btn-secondary.active { background: rgba(74,158,255,0.18); border-color: rgba(74,158,255,0.4); }
-    .tag { display: inline-flex; align-items: center; gap: 4px; padding: 4px 14px; border-radius: 20px; font-size: 12px; font-weight: 600; }
+    .card { @apply glass rounded-2xl p-5 transition-all duration-200; }
+    .loading-spinner { width: 36px; height: 36px; border: 3px solid rgba(74,158,255,0.1); border-top: 3px solid #4a9eff; border-radius: 50%; animation: spin 0.7s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .fade-in { animation: fadeIn 0.4s ease; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+    .signal-badge { display: inline-flex; align-items: center; padding: 6px 20px; border-radius: 100px; font-weight: 700; font-size: 20px; letter-spacing: 0.05em; }
+    .tag { display: inline-flex; align-items: center; padding: 3px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; }
     .tag-buy { background: rgba(0,245,160,0.15); color: #00f5a0; }
-    .tag-hold { background: rgba(255,215,0,0.15); color: #ffd700; }
     .tag-sell { background: rgba(255,64,96,0.15); color: #ff4060; }
+    .tag-hold { background: rgba(255,215,0,0.15); color: #ffd700; }
+    .tag-neutral { background: rgba(74,158,255,0.15); color: #4a9eff; }
     .tag-us { background: rgba(74,158,255,0.15); color: #4a9eff; }
     .tag-india { background: rgba(255,165,0,0.15); color: #ffa500; }
     .tag-crypto { background: rgba(168,85,247,0.15); color: #a855f7; }
-    .signal-box { @apply glass rounded-2xl p-6; background: linear-gradient(135deg, rgba(13,13,22,0.9), rgba(18,18,30,0.8)); }
-    .analysis-content { @apply glass-light rounded-2xl p-6; max-height: 500px; overflow-y: auto; }
-    .analysis-content::-webkit-scrollbar { width: 4px; }
-    .analysis-content::-webkit-scrollbar-track { background: transparent; }
-    .analysis-content::-webkit-scrollbar-thumb { background: rgba(74,158,255,0.25); border-radius: 2px; }
-    .loading-spinner { width: 36px; height: 36px; border: 3px solid rgba(74,158,255,0.1); border-top: 3px solid #4a9eff; border-radius: 50%; animation: spin 0.7s linear infinite; }
-    @keyframes spin { to { transform: rotate(360deg); } }
-    .prose { line-height: 1.75; font-size: 0.95rem; color: #c0c0d0; }
-    .prose h2 { color: #fff; font-size: 1.15rem; font-weight: 600; margin: 1.5em 0 0.5em; border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 0.4em; }
-    .prose h3 { color: #e0e0f0; font-size: 1.05rem; font-weight: 600; margin: 1.2em 0 0.4em; }
-    .prose p { margin: 0.6em 0; }
-    .prose strong { color: #fff; }
-    .prose ul, .prose ol { margin: 0.4em 0; padding-left: 1.5em; }
-    .prose li { margin: 0.2em 0; }
-    .prose code { background: rgba(74,158,255,0.08); padding: 2px 6px; border-radius: 4px; font-family: 'JetBrains Mono', monospace; font-size: 0.88em; color: #4a9eff; }
-    .prose pre { background: rgba(0,0,0,0.35); border-radius: 10px; padding: 1em; overflow-x: auto; margin: 0.6em 0; }
-    .prose pre code { background: none; color: #d0d0e0; }
-    .prose table { width: 100%; border-collapse: collapse; margin: 0.8em 0; font-size: 0.9rem; }
-    .prose th, .prose td { border: 1px solid rgba(255,255,255,0.08); padding: 8px 12px; text-align: left; }
-    .prose th { background: rgba(74,158,255,0.08); color: #fff; font-weight: 500; }
-    .prose blockquote { border-left: 3px solid rgba(74,158,255,0.3); padding-left: 1em; margin: 0.8em 0; color: #9090a0; font-style: italic; }
-    .fade-in { animation: fadeIn 0.4s ease; }
-    @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
-    .stock-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 6px; }
-    .stock-chip { @apply glass rounded-lg px-3 py-2 text-xs font-medium cursor-pointer transition-all text-center; }
-    .stock-chip:hover { background: rgba(74,158,255,0.12); border-color: rgba(74,158,255,0.3); }
-    .stock-chip.active { background: rgba(74,158,255,0.2); border-color: rgba(74,158,255,0.5); }
+    .chip { @apply glass rounded-lg px-3 py-2 text-xs font-medium cursor-pointer transition-all text-center; }
+    .chip:hover { background: rgba(74,158,255,0.12); border-color: rgba(74,158,255,0.3); }
+    .chip.active { background: rgba(74,158,255,0.2); border-color: rgba(74,158,255,0.5); }
+    .metric-box { @apply glass rounded-xl p-4 text-center; }
+    .metric-label { font-size: 10px; color: #666; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 600; margin-bottom: 4px; }
+    .metric-value { font-size: 18px; font-weight: 700; color: #fff; }
+    .justification-text { line-height: 1.75; font-size: 0.95rem; color: #c0c0d0; }
+    .search-dropdown { position: absolute; top: 100%; left: 0; right: 0; z-index: 50; max-height: 360px; overflow-y: auto; border-radius: 0 0 12px 12px; }
+    .search-dropdown::-webkit-scrollbar { width: 4px; }
+    .search-dropdown::-webkit-scrollbar-thumb { background: rgba(74,158,255,0.25); border-radius: 2px; }
+    .stock-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 4px; }
   </style>
 </head>
 <body>
-  <div class="max-w-7xl mx-auto px-3 md:px-6 py-4 md:py-6">
-    <!-- Header -->
-    <header class="flex flex-col md:flex-row md:items-center justify-between gap-3 mb-6">
-      <div>
-        <h1 class="text-2xl md:text-3xl font-bold gradient-text">TradingAgents</h1>
-        <p class="text-gray-600 text-xs md:text-sm mt-0.5">Multi-Agent AI Trading Analysis — US & Indian Markets</p>
-      </div>
-      <div class="flex items-center gap-3 text-xs md:text-sm">
-        <span id="status" class="flex items-center gap-2 text-gray-500">
-          <span class="w-2 h-2 rounded-full bg-gray-600" id="status-dot"></span>
-          <span id="status-text">Ready</span>
-        </span>
-      </div>
-    </header>
+<div class="max-w-6xl mx-auto px-4 py-6">
+  <!-- Header -->
+  <header class="flex items-center justify-between mb-6">
+    <div>
+      <h1 class="text-2xl font-bold gradient-text">Stock Analyzer</h1>
+      <p class="text-gray-600 text-xs mt-0.5">AI-Powered Quantitative Equity Research — US & India Markets</p>
+    </div>
+    <span id="status" class="flex items-center gap-2 text-xs text-gray-500">
+      <span class="w-2 h-2 rounded-full bg-gray-600" id="status-dot"></span>
+      <span id="status-text">Ready</span>
+    </span>
+  </header>
 
-    <!-- Stock Quick Picks -->
-    <div class="glass rounded-2xl p-4 mb-5">
-      <div class="flex items-center gap-3 mb-3">
-        <h2 class="text-sm font-semibold text-gray-400 uppercase tracking-wider">Quick Select</h2>
-        <div class="flex gap-2 ml-auto">
-          <button class="text-xs px-3 py-1 rounded-full bg-white/5 hover:bg-white/10 transition" onclick="filterStocks('ALL')">All</button>
-          <button class="text-xs px-3 py-1 rounded-full bg-white/5 hover:bg-white/10 transition" onclick="filterStocks('US')">US</button>
-          <button class="text-xs px-3 py-1 rounded-full bg-white/5 hover:bg-white/10 transition" onclick="filterStocks('INDIA')">India</button>
-          <button class="text-xs px-3 py-1 rounded-full bg-white/5 hover:bg-white/10 transition" onclick="filterStocks('CRYPTO')">Crypto</button>
-        </div>
+  <!-- Stock Selector -->
+  <div class="glass rounded-2xl p-4 mb-5">
+    <!-- Search + Analyze row -->
+    <div class="flex gap-3 items-end relative">
+      <div class="flex-1 relative">
+        <label class="text-[10px] text-gray-500 uppercase tracking-wider font-semibold mb-1.5 block">Search Stocks & ETFs</label>
+        <input id="stock-search" type="text" class="w-full glass rounded-xl px-4 py-2.5 text-white outline-none focus:border-accent-blue/50 focus:shadow-[0_0_0_3px_rgba(74,158,255,0.08)]" placeholder="Type ticker or company name..." autocomplete="off">
+        <div id="search-dropdown" class="search-dropdown hidden glass mt-0.5"></div>
       </div>
-      <div id="stock-grid" class="stock-grid"></div>
+      <button id="analyze-btn" class="btn-primary flex items-center gap-2 flex-shrink-0" onclick="doAnalyze()">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+        Analyze
+      </button>
     </div>
 
-    <!-- Main Controls -->
-    <div class="glass rounded-2xl p-4 md:p-6 mb-5">
-      <div class="grid grid-cols-1 md:grid-cols-5 gap-3">
-        <div class="md:col-span-1">
-          <label class="text-[10px] text-gray-500 uppercase tracking-wider font-semibold mb-1.5 block">Ticker</label>
-          <input id="ticker" type="text" value="AAPL" class="w-full glass rounded-xl px-4 py-2.5 text-white outline-none transition-all focus:border-accent-blue/50 focus:shadow-[0_0_0_3px_rgba(74,158,255,0.08)]" placeholder="e.g. AAPL, RELIANCE.NS">
-        </div>
-        <div>
-          <label class="text-[10px] text-gray-500 uppercase tracking-wider font-semibold mb-1.5 block">Date</label>
-          <input id="date" type="date" class="w-full glass rounded-xl px-4 py-2.5 text-white outline-none transition-all focus:border-accent-blue/50 focus:shadow-[0_0_0_3px_rgba(74,158,255,0.08)]">
-        </div>
-        <div>
-          <label class="text-[10px] text-gray-500 uppercase tracking-wider font-semibold mb-1.5 block">Chart Period</label>
-          <select id="period" class="w-full glass rounded-xl px-4 py-2.5 text-white outline-none transition-all">
-            <option value="1mo">1 Month</option>
-            <option value="3mo">3 Months</option>
-            <option value="6mo">6 Months</option>
-            <option value="1y" selected>1 Year</option>
-            <option value="2y">2 Years</option>
-            <option value="5y">5 Years</option>
-          </select>
-        </div>
-        <div>
-          <label class="text-[10px] text-gray-500 uppercase tracking-wider font-semibold mb-1.5 block">Debate Rounds</label>
-          <select id="rounds" class="w-full glass rounded-xl px-4 py-2.5 text-white outline-none transition-all">
-            <option value="1">1 (Fast)</option>
-            <option value="2" selected>2 (Balanced)</option>
-            <option value="3">3 (Deep)</option>
-          </select>
-        </div>
-        <div class="flex items-end">
-          <button id="analyze-btn" class="btn-primary w-full flex items-center justify-center gap-2 text-sm py-2.5" onclick="analyze()">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
-            Analyze
-          </button>
-        </div>
-      </div>
+    <!-- Market filter tabs -->
+    <div class="flex gap-1.5 mt-3 mb-2.5">
+      <button class="text-xs px-3 py-1.5 rounded-full bg-white/10 text-white font-medium transition hover:bg-white/15" onclick="filterMarket('ALL')">All</button>
+      <button class="text-xs px-3 py-1.5 rounded-full bg-white/5 text-gray-400 transition hover:bg-white/10" onclick="filterMarket('US')">🇺🇸 US</button>
+      <button class="text-xs px-3 py-1.5 rounded-full bg-white/5 text-gray-400 transition hover:bg-white/10" onclick="filterMarket('INDIA')">🇮🇳 India</button>
+      <button class="text-xs px-3 py-1.5 rounded-full bg-white/5 text-gray-400 transition hover:bg-white/10" onclick="filterMarket('CRYPTO')">₿ Crypto</button>
+      <span class="text-[10px] text-gray-600 self-center ml-auto" id="stock-count"></span>
     </div>
 
-    <!-- Chart + Company Info -->
-    <div class="grid grid-cols-1 lg:grid-cols-4 gap-5 mb-5">
-      <div class="lg:col-span-3 card p-3 md:p-5">
+    <!-- Stock grid -->
+    <div id="stock-grid" class="stock-grid"></div>
+  </div>
+
+  <!-- Loading -->
+  <div id="loading-area" class="hidden flex items-center justify-center py-24">
+    <div class="text-center">
+      <div class="loading-spinner mx-auto mb-4"></div>
+      <p class="text-gray-400 text-sm font-medium">Running AI Analysis</p>
+      <p class="text-gray-600 text-xs mt-2">Fetching data + evaluating fundamentals & technicals</p>
+    </div>
+  </div>
+
+  <!-- Results -->
+  <div id="results" class="hidden fade-in space-y-5">
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div class="md:col-span-3 card">
         <div class="flex items-center justify-between mb-3">
           <div>
             <span id="co-name" class="text-sm text-gray-400"></span>
-            <span id="co-price" class="text-xl font-bold text-white ml-3"></span>
+            <span id="co-price" class="text-2xl font-bold text-white ml-3"></span>
             <span id="co-change" class="text-sm ml-2"></span>
           </div>
-          <div class="flex gap-1.5">
-            <button onclick="setChartType('candle')" id="chart-candle" class="btn-secondary active text-xs px-3 py-1.5">Candle</button>
-            <button onclick="setChartType('line')" id="chart-line" class="btn-secondary text-xs px-3 py-1.5">Line</button>
-          </div>
         </div>
-        <div class="relative" style="height: 350px;"><canvas id="priceChart"></canvas></div>
+        <div style="height:260px"><canvas id="priceChart"></canvas></div>
       </div>
-      <div class="lg:col-span-1 flex flex-col gap-3">
-        <div class="card-compact flex-1 flex flex-col items-center justify-center text-center">
-          <div class="text-[10px] text-gray-500 uppercase tracking-wider mb-1">Current Price</div>
-          <div id="co-price-lg" class="text-3xl font-bold text-white">—</div>
-          <div id="co-change-lg" class="text-sm mt-1">—</div>
+      <div class="md:col-span-1 card flex flex-col items-center justify-center text-center gap-3">
+        <div id="signal-big" class="signal-badge">—</div>
+        <div id="conviction" class="text-xs text-gray-500">Conviction: —</div>
+        <div id="risk-label" class="tag text-xs">—</div>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-3 md:grid-cols-6 gap-3" id="stats-row">
+      <div class="metric-box"><div class="metric-label">Market Cap</div><div id="mcap" class="metric-value">—</div></div>
+      <div class="metric-box"><div class="metric-label">Sector</div><div id="sector" class="metric-value text-sm">—</div></div>
+      <div class="metric-box"><div class="metric-label">52W High</div><div id="w52h" class="metric-value">—</div></div>
+      <div class="metric-box"><div class="metric-label">52W Low</div><div id="w52l" class="metric-value">—</div></div>
+      <div class="metric-box"><div class="metric-label">RSI (14)</div><div id="rsi" class="metric-value">—</div></div>
+      <div class="metric-box"><div class="metric-label">Beta</div><div id="beta" class="metric-value">—</div></div>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+      <div class="card">
+        <h3 class="text-xs text-gray-500 uppercase tracking-wider font-semibold mb-3">Layer 1 · Quantitative & Technical</h3>
+        <div class="space-y-3">
+          <div class="flex justify-between items-center"><span class="text-sm text-gray-400">Trend Bias</span><span id="q-trend" class="tag text-xs">—</span></div>
+          <div class="flex justify-between items-center"><span class="text-sm text-gray-400">RSI Interpretation</span><span id="q-rsi" class="text-sm text-white text-right max-w-[60%]">—</span></div>
+          <div class="flex justify-between items-center"><span class="text-sm text-gray-400">MA Alignment</span><span id="q-ma" class="text-sm text-white text-right max-w-[60%]">—</span></div>
+          <div class="flex justify-between items-center"><span class="text-sm text-gray-400">Volatility Regime</span><span id="q-vol" class="tag text-xs">—</span></div>
         </div>
-        <div class="card-compact flex-1 flex flex-col items-center justify-center text-center">
-          <div class="text-[10px] text-gray-500 uppercase tracking-wider mb-1">Market Cap</div>
-          <div id="co-mcap" class="text-lg font-bold text-white">—</div>
-          <div id="co-sector" class="text-xs text-gray-500 mt-1">—</div>
-        </div>
-        <div class="card-compact flex-1 flex flex-col items-center justify-center text-center">
-          <div class="text-[10px] text-gray-500 uppercase tracking-wider mb-1">Previous Close</div>
-          <div id="co-prev" class="text-lg font-bold text-white">—</div>
-          <div id="co-range" class="text-xs text-gray-500 mt-1">—</div>
+      </div>
+      <div class="card">
+        <h3 class="text-xs text-gray-500 uppercase tracking-wider font-semibold mb-3">Layer 2 · Fundamental & Valuation</h3>
+        <div class="space-y-3">
+          <div class="flex justify-between items-center"><span class="text-sm text-gray-400">Valuation Stance</span><span id="f-val" class="tag text-xs">—</span></div>
+          <div class="flex justify-between items-center"><span class="text-sm text-gray-400">Balance Sheet</span><span id="f-bs" class="tag text-xs">—</span></div>
+          <div class="flex justify-between items-center"><span class="text-sm text-gray-400">Growth Trajectory</span><span id="f-growth" class="tag text-xs">—</span></div>
         </div>
       </div>
     </div>
 
-    <!-- Signal Card -->
-    <div id="signal-area" class="hidden mb-5 fade-in">
-      <div class="signal-box">
-        <div class="text-[10px] text-gray-500 uppercase tracking-wider font-semibold mb-3">Trading Signal</div>
-        <div class="grid grid-cols-2 md:grid-cols-5 gap-3">
-          <div class="text-center p-3 rounded-xl bg-white/5">
-            <div class="text-[10px] text-gray-500 uppercase mb-1">Action</div>
-            <div id="sig-action" class="text-xl font-bold"></div>
-          </div>
-          <div class="text-center p-3 rounded-xl bg-white/5">
-            <div class="text-[10px] text-gray-500 uppercase mb-1">Entry</div>
-            <div id="sig-entry" class="text-lg font-semibold text-accent-blue"></div>
-          </div>
-          <div class="text-center p-3 rounded-xl bg-white/5">
-            <div class="text-[10px] text-gray-500 uppercase mb-1">Stop Loss</div>
-            <div id="sig-sl" class="text-lg font-semibold text-accent-red"></div>
-          </div>
-          <div class="text-center p-3 rounded-xl bg-white/5">
-            <div class="text-[10px] text-gray-500 uppercase mb-1">Take Profit</div>
-            <div id="sig-tp" class="text-lg font-semibold text-accent-green"></div>
-          </div>
-          <div class="text-center p-3 rounded-xl bg-white/5">
-            <div class="text-[10px] text-gray-500 uppercase mb-1">Confidence</div>
-            <div id="sig-confidence" class="text-lg font-semibold text-accent-gold"></div>
-          </div>
+    <div class="card">
+      <h3 class="text-xs text-gray-500 uppercase tracking-wider font-semibold mb-3">Layer 3 · Investment Thesis</h3>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+        <div class="glass rounded-xl p-4 border-l-2 border-accent-green">
+          <div class="text-xs text-accent-green font-semibold uppercase tracking-wider mb-2">Bull Case Drivers</div>
+          <ul id="bull-list" class="text-sm text-gray-300 space-y-1 list-disc list-inside"></ul>
         </div>
-        <div id="sig-reason" class="mt-3 text-sm text-gray-400 border-t border-white/5 pt-3"></div>
-      </div>
-    </div>
-
-    <!-- Stats Bar -->
-    <div id="stats-row" class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-5 hidden fade-in">
-      <div class="card-compact text-center"><div class="text-[10px] text-gray-500 uppercase mb-1">Decision</div><div id="stat-decision" class="text-lg font-bold"></div></div>
-      <div class="card-compact text-center"><div class="text-[10px] text-gray-500 uppercase mb-1">Ticker</div><div id="stat-ticker" class="text-lg font-bold text-accent-blue"></div></div>
-      <div class="card-compact text-center"><div class="text-[10px] text-gray-500 uppercase mb-1">Date</div><div id="stat-date" class="text-lg font-bold text-accent-gold"></div></div>
-      <div class="card-compact text-center"><div class="text-[10px] text-gray-500 uppercase mb-1">Analysis Time</div><div id="stat-time" class="text-lg font-bold text-accent-green"></div></div>
-    </div>
-
-    <!-- Analysis Tabs + Content -->
-    <div id="analysis-area" class="hidden fade-in">
-      <div id="analysis-loading" class="flex items-center justify-center py-24">
-        <div class="text-center">
-          <div class="loading-spinner mx-auto mb-4"></div>
-          <p class="text-gray-400 text-sm font-medium">Running Multi-Agent Analysis</p>
-          <div class="flex flex-wrap justify-center gap-1.5 mt-3 text-[11px] text-gray-600">
-            <span class="bg-white/5 px-2.5 py-1 rounded-full">Market Analyst</span>
-            <span class="bg-white/5 px-2.5 py-1 rounded-full">Sentiment</span>
-            <span class="bg-white/5 px-2.5 py-1 rounded-full">News</span>
-            <span class="bg-white/5 px-2.5 py-1 rounded-full">Fundamentals</span>
-            <span class="bg-white/5 px-2.5 py-1 rounded-full">Research</span>
-            <span class="bg-white/5 px-2.5 py-1 rounded-full">Trader</span>
-            <span class="bg-white/5 px-2.5 py-1 rounded-full">Risk</span>
-            <span class="bg-white/5 px-2.5 py-1 rounded-full">Portfolio</span>
-          </div>
+        <div class="glass rounded-xl p-4 border-l-2 border-accent-red">
+          <div class="text-xs text-accent-red font-semibold uppercase tracking-wider mb-2">Bear Case Risks</div>
+          <ul id="bear-list" class="text-sm text-gray-300 space-y-1 list-disc list-inside"></ul>
         </div>
       </div>
-      <div id="sections-wrapper" class="hidden">
-        <div id="section-tabs" class="flex flex-wrap gap-1.5 mb-3"></div>
-        <div id="section-content" class="analysis-content prose max-w-none"></div>
+      <div class="glass rounded-xl p-4">
+        <div class="text-xs text-gray-500 font-semibold uppercase tracking-wider mb-2">Detailed Justification</div>
+        <div id="justification" class="justification-text">—</div>
       </div>
     </div>
 
-    <footer class="text-center text-gray-700 text-xs mt-10 py-5 border-t border-white/5">
-      TradingAgents v0.2.5 — Multi-Agent LLM Financial Trading Framework
-    </footer>
+    <div id="error-area" class="hidden card text-accent-red text-sm"></div>
   </div>
 
-  <script>
-    let priceChart = null, chartType = 'candle', currentData = null, allStocks = [], analysisStart = 0;
+  <footer class="text-center text-gray-700 text-xs mt-10 py-5 border-t border-white/5">
+    Stock Analyzer — AI-Powered Equity Research · Not financial advice
+  </footer>
+</div>
 
-    document.addEventListener('DOMContentLoaded', async () => {
-      document.getElementById('date').value = new Date().toISOString().split('T')[0];
-      await loadStocks();
-      loadChart();
-    });
+<script>
+let priceChart = null, allStocks = [], currentMarket = 'ALL', searchTimer = null;
+const AUTH_TOKEN = localStorage.getItem('auth_token');
 
-    document.getElementById('ticker').addEventListener('keydown', e => { if (e.key === 'Enter') analyze(); });
-    document.getElementById('period').addEventListener('change', () => loadChart());
-    document.getElementById('ticker').addEventListener('input', () => loadChart());
+// Redirect to login if not authenticated
+if (!AUTH_TOKEN) {
+  window.location.href = '/login';
+}
 
-    async function loadStocks() {
-      try {
-        const r = await fetch('/api/stocks');
-        allStocks = await r.json();
-        renderStocks('ALL');
-      } catch(e) { console.error(e); }
+async function authFetch(url, opts = {}) {
+  opts.headers = { ...opts.headers, 'Authorization': 'Bearer ' + AUTH_TOKEN };
+  const r = await fetch(url, opts);
+  if (r.status === 401) {
+    localStorage.removeItem('auth_token');
+    window.location.href = '/login';
+    throw new Error('Session expired');
+  }
+  return r;
+}
+
+async function loadStocks() {
+  try {
+    const r = await authFetch('/api/stocks');
+    allStocks = await r.json();
+    renderGrid('ALL');
+  } catch(e) { console.error(e); }
+}
+
+function renderGrid(filter) {
+  const grid = document.getElementById('stock-grid');
+  const filtered = filter === 'ALL' ? allStocks : allStocks.filter(s => s.m === filter);
+  document.getElementById('stock-count').textContent = filtered.length + ' stocks';
+  const marketTags = { US: 'tag-us', INDIA: 'tag-india', CRYPTO: 'tag-crypto' };
+  grid.innerHTML = filtered.map(s => `
+    <div class="chip text-left flex flex-col items-start cursor-pointer" onclick="pickStock('${s.s}')">
+      <span class="font-semibold text-white text-xs">${s.s.replace('.NS','')}</span>
+      <span class="text-gray-500 text-[10px] truncate w-full">${s.n}</span>
+      <span class="${marketTags[s.m] || 'tag-us'} text-[9px] px-1.5 py-0.5 mt-0.5 inline-block rounded-full">${s.m}</span>
+    </div>
+  `).join('');
+}
+
+function filterMarket(filter) {
+  currentMarket = filter;
+  document.querySelectorAll('[onclick^="filterMarket"]').forEach(b => {
+    b.classList.toggle('bg-white/10', b.textContent.trim().startsWith(
+      filter === 'ALL' ? 'All' : filter === 'US' ? '🇺🇸' : filter === 'INDIA' ? '🇮🇳' : '₿'
+    ));
+    b.classList.toggle('text-white', b.textContent.trim().startsWith(
+      filter === 'ALL' ? 'All' : filter === 'US' ? '🇺🇸' : filter === 'INDIA' ? '🇮🇳' : '₿'
+    ));
+    b.classList.toggle('text-gray-400', !b.textContent.trim().startsWith(
+      filter === 'ALL' ? 'All' : filter === 'US' ? '🇺🇸' : filter === 'INDIA' ? '🇮🇳' : '₿'
+    ));
+  });
+  renderGrid(filter);
+}
+
+function pickStock(ticker) {
+  document.getElementById('stock-search').value = ticker;
+  document.getElementById('search-dropdown').classList.add('hidden');
+  doAnalyze();
+}
+
+// Search with debounce
+document.getElementById('stock-search').addEventListener('input', function() {
+  clearTimeout(searchTimer);
+  const q = this.value.trim();
+  if (q.length < 1) {
+    document.getElementById('search-dropdown').classList.add('hidden');
+    return;
+  }
+  searchTimer = setTimeout(() => doSearch(q), 250);
+});
+
+document.getElementById('stock-search').addEventListener('keydown', function(e) {
+  if (e.key === 'Enter') {
+    document.getElementById('search-dropdown').classList.add('hidden');
+    doAnalyze();
+  }
+  if (e.key === 'Escape') {
+    document.getElementById('search-dropdown').classList.add('hidden');
+  }
+});
+
+// Close search on click outside
+document.addEventListener('click', function(e) {
+  if (!e.target.closest('#stock-search') && !e.target.closest('#search-dropdown')) {
+    document.getElementById('search-dropdown').classList.add('hidden');
+  }
+});
+
+async function doSearch(q) {
+  try {
+    const r = await authFetch(`/api/stocks/search?q=${encodeURIComponent(q)}`);
+    const results = await r.json();
+    const dd = document.getElementById('search-dropdown');
+    if (!results.length) {
+      dd.classList.add('hidden');
+      return;
+    }
+    const marketTags = { US: 'tag-us', INDIA: 'tag-india', OTHER: 'tag-neutral' };
+    dd.innerHTML = results.map(s => `
+      <div class="px-4 py-2.5 hover:bg-white/[0.04] cursor-pointer transition flex items-center gap-3 border-b border-white/5 last:border-0" onclick="pickStock('${s.s}')">
+        <span class="font-semibold text-white text-sm">${s.s}</span>
+        <span class="text-gray-400 text-xs truncate flex-1">${s.n}</span>
+        <span class="${marketTags[s.m] || 'tag-us'} text-[9px] px-2 py-0.5 rounded-full">${s.m}</span>
+      </div>
+    `).join('');
+    dd.classList.remove('hidden');
+  } catch(e) { console.error(e); }
+}
+
+function setStatus(text, color) {
+  document.getElementById('status-dot').style.background = color;
+  document.getElementById('status-text').textContent = text;
+}
+
+async function doAnalyze() {
+  const ticker = document.getElementById('stock-search').value.trim().toUpperCase() || 'AAPL';
+  document.getElementById('error-area').classList.add('hidden');
+  document.getElementById('results').classList.add('hidden');
+  document.getElementById('loading-area').classList.remove('hidden');
+  document.getElementById('analyze-btn').disabled = true;
+  document.getElementById('analyze-btn').innerHTML = '<svg class="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg> Analyzing...';
+  setStatus('Analyzing', '#4a9eff');
+
+  try {
+    const [priceRes, analyzeRes] = await Promise.all([
+      authFetch(`/api/price?ticker=${encodeURIComponent(ticker)}&period=1y`),
+      authFetch(`/api/analyze?ticker=${encodeURIComponent(ticker)}`)
+    ]);
+    const priceData = await priceRes.json();
+    const result = await analyzeRes.json();
+
+    if (result.error) throw new Error(result.error);
+
+    document.getElementById('loading-area').classList.add('hidden');
+    document.getElementById('results').classList.remove('hidden');
+
+    const ps = result.price_snapshot || {};
+    document.getElementById('co-name').textContent = ps.company_name || result.company_name || ticker;
+    if (ps.current_price != null) {
+      document.getElementById('co-price').textContent = '$' + Number(ps.current_price).toFixed(2);
+    }
+    if (ps.change_pct != null) {
+      const ch = Number(ps.change_pct);
+      const cls = ch >= 0 ? 'text-accent-green' : 'text-accent-red';
+      const sign = ch >= 0 ? '+' : '';
+      document.getElementById('co-change').innerHTML = `<span class="${cls}">${sign}${ch.toFixed(2)}%</span>`;
     }
 
-    function renderStocks(filter) {
-      const grid = document.getElementById('stock-grid');
-      const filtered = filter === 'ALL' ? allStocks : allStocks.filter(s => s.m === filter);
-      const marketTags = { US: 'tag-us', INDIA: 'tag-india', CRYPTO: 'tag-crypto' };
-      grid.innerHTML = filtered.map(s => `
-        <div class="stock-chip cursor-pointer" onclick="pickStock('${s.s}')">
-          <span class="font-semibold text-white block">${s.s.replace('.NS','')}</span>
-          <span class="text-gray-500 text-[10px] truncate block">${s.n}</span>
-          <span class="${marketTags[s.m] || 'tag-us'} text-[9px] px-1.5 py-0.5 mt-0.5 inline-block rounded-full">${s.m}</span>
-        </div>
-      `).join('');
+    if (!priceData.error) renderMiniChart(priceData);
+
+    const rec = result.recommendation || {};
+    const sig = (rec.signal || '').replace(/_/g, ' ');
+    const sigEl = document.getElementById('signal-big');
+    const sigCls = sig.includes('BUY') ? 'tag-buy' : sig.includes('SELL') ? 'tag-sell' : 'tag-hold';
+    sigEl.textContent = sig || '—';
+    sigEl.className = 'signal-badge ' + sigCls;
+    document.getElementById('conviction').textContent = rec.conviction_score != null ? 'Conviction: ' + rec.conviction_score + '/10' : 'Conviction: —';
+    document.getElementById('risk-label').textContent = rec.risk_level || '—';
+    const rl = (rec.risk_level || '').toLowerCase();
+    document.getElementById('risk-label').className = 'tag text-xs ' + (rl.includes('high') || rl.includes('spec') ? 'tag-sell' : rl.includes('low') ? 'tag-buy' : 'tag-neutral');
+
+    if (priceData.market_cap) {
+      const m = priceData.market_cap;
+      document.getElementById('mcap').textContent = m >= 1e12 ? '$' + (m/1e12).toFixed(2) + 'T' : m >= 1e9 ? '$' + (m/1e9).toFixed(2) + 'B' : '$' + (m/1e6).toFixed(0) + 'M';
     }
+    document.getElementById('sector').textContent = priceData.sector || '—';
+    document.getElementById('w52h').textContent = priceData['52w_high'] != null ? '$' + priceData['52w_high'] : '—';
+    document.getElementById('w52l').textContent = priceData['52w_low'] != null ? '$' + priceData['52w_low'] : '—';
+    document.getElementById('rsi').textContent = priceData.rsi_14 != null ? priceData.rsi_14 : '—';
+    document.getElementById('beta').textContent = priceData.beta != null ? priceData.beta : '—';
 
-    function filterStocks(filter) {
-      document.querySelectorAll('[onclick^="filterStocks"]').forEach(b => b.classList.toggle('bg-white/15'));
-      renderStocks(filter);
-    }
+    const q = result.quantitative_analysis || {};
+    setTag('q-trend', q.trend_bias || '—', (q.trend_bias||'').includes('BULL') ? 'tag-buy' : (q.trend_bias||'').includes('BEAR') ? 'tag-sell' : 'tag-neutral');
+    document.getElementById('q-rsi').textContent = q.rsi_interpretation || '—';
+    document.getElementById('q-ma').textContent = q.moving_average_alignment || '—';
+    setTag('q-vol', q.volatility_regime || '—', (q.volatility_regime||'') === 'HIGH' ? 'tag-sell' : (q.volatility_regime||'') === 'LOW' ? 'tag-buy' : 'tag-neutral');
 
-    function pickStock(ticker) {
-      document.getElementById('ticker').value = ticker;
-      document.querySelectorAll('.stock-chip').forEach(c => c.classList.remove('active'));
-      event.currentTarget.classList.add('active');
-      loadChart();
-    }
+    const f = result.fundamental_analysis || {};
+    setTag('f-val', (f.valuation_stance||'—').replace(/_/g, ' '), (f.valuation_stance||'').includes('UNDER') ? 'tag-buy' : (f.valuation_stance||'').includes('OVER') ? 'tag-sell' : 'tag-neutral');
+    setTag('f-bs', (f.balance_sheet_health||'—').replace(/_/g, ' '), (f.balance_sheet_health||'').includes('STRONG') ? 'tag-buy' : (f.balance_sheet_health||'').includes('DISTRESS') ? 'tag-sell' : 'tag-neutral');
+    setTag('f-growth', (f.growth_trajectory||'—').replace(/_/g, ' '), (f.growth_trajectory||'').includes('ACCEL') ? 'tag-buy' : (f.growth_trajectory||'').includes('DECEL') ? 'tag-sell' : 'tag-neutral');
 
-    async function loadChart() {
-      const ticker = document.getElementById('ticker').value || 'AAPL';
-      const period = document.getElementById('period').value;
-      try {
-        const r = await fetch(`/api/price?ticker=${encodeURIComponent(ticker)}&period=${period}`);
-        currentData = await r.json();
-        if (currentData.error) return;
-        renderChart(currentData);
-        if (currentData.company) document.getElementById('co-name').textContent = currentData.company;
-        if (currentData.current_price) {
-          const p = currentData.current_price;
-          document.getElementById('co-price').textContent = `$${p.toFixed(2)}`;
-          document.getElementById('co-price-lg').textContent = `$${p.toFixed(2)}`;
-        }
-        if (currentData.change_pct != null) {
-          const ch = currentData.change_pct;
-          const cls = ch >= 0 ? 'text-accent-green' : 'text-accent-red';
-          const sign = ch >= 0 ? '+' : '';
-          document.getElementById('co-change').innerHTML = `<span class="${cls}">${sign}${ch.toFixed(2)}%</span>`;
-          document.getElementById('co-change-lg').innerHTML = `<span class="${cls}">${sign}${ch.toFixed(2)}%</span>`;
-        }
-        if (currentData.market_cap) {
-          const m = currentData.market_cap;
-          document.getElementById('co-mcap').textContent = m >= 1e12 ? `$${(m/1e12).toFixed(2)}T` : m >= 1e9 ? `$${(m/1e9).toFixed(2)}B` : `$${(m/1e6).toFixed(0)}M`;
-        }
-        if (currentData.sector) document.getElementById('co-sector').textContent = `${currentData.sector}${currentData.industry ? ' · ' + currentData.industry : ''}`;
-        if (currentData.previous_close) document.getElementById('co-prev').textContent = `$${currentData.previous_close.toFixed(2)}`;
-      } catch(e) { console.error(e); }
-    }
+    const t = result.investment_thesis || {};
+    document.getElementById('bull-list').innerHTML = (t.bull_case_drivers || []).map(d => '<li>' + d + '</li>').join('') || '<li class="text-gray-600 italic">None specified</li>';
+    document.getElementById('bear-list').innerHTML = (t.bear_case_risks || []).map(d => '<li>' + d + '</li>').join('') || '<li class="text-gray-600 italic">None specified</li>';
+    document.getElementById('justification').textContent = t.detailed_justification || '—';
 
-    function renderChart(data) {
-      const ctx = document.getElementById('priceChart').getContext('2d');
-      if (priceChart) priceChart.destroy();
-      const labels = data.dates;
-      const close = data.close;
+    setStatus('Ready', '#00f5a0');
+  } catch(e) {
+    document.getElementById('loading-area').classList.add('hidden');
+    document.getElementById('results').classList.remove('hidden');
+    document.getElementById('error-area').classList.remove('hidden');
+    document.getElementById('error-area').textContent = 'Error: ' + (e.message || e);
+    setStatus('Error', '#ff4060');
+  }
+  document.getElementById('analyze-btn').disabled = false;
+  document.getElementById('analyze-btn').innerHTML = '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg> Analyze';
+}
 
-      if (chartType === 'candle') {
-        priceChart = new Chart(ctx, {
-          type: 'bar',
-          data: {
-            labels: labels.slice(-120),
-            datasets: [
-              { label: 'Volume', data: data.volume.slice(-120).map(v => v / 1000000), backgroundColor: 'rgba(74,158,255,0.12)', borderRadius: 2, yAxisID: 'y1', order: 2 },
-              { label: 'Close', data: close.slice(-120), borderColor: '#4a9eff', backgroundColor: 'rgba(74,158,255,0.06)', fill: true, tension: 0.3, pointRadius: 0, borderWidth: 2, yAxisID: 'y', order: 1 }
-            ]
-          },
-          options: {
-            responsive: true, maintainAspectRatio: false,
-            interaction: { mode: 'index', intersect: false },
-            plugins: {
-              legend: { display: false },
-              tooltip: {
-                backgroundColor: 'rgba(13,13,22,0.95)', titleColor: '#fff', bodyColor: '#b0b0c0',
-                borderColor: 'rgba(255,255,255,0.08)', borderWidth: 1, padding: 10,
-                callbacks: {
-                  label: ctx => ctx.dataset.label === 'Close' ? `$${ctx.parsed.y.toFixed(2)}` : `${(ctx.parsed.y * 1000000).toLocaleString()} vols`
-                }
-              }
-            },
-            scales: {
-              x: { grid: { display: false }, ticks: { color: '#555', maxTicksLimit: 8, font: { size: 10 } } },
-              y: { position: 'right', grid: { color: 'rgba(255,255,255,0.03)' }, ticks: { color: '#4a9eff', font: { size: 10 }, callback: v => '$' + v.toFixed(0) } },
-              y1: { position: 'left', grid: { display: false }, ticks: { color: '#444', font: { size: 9 }, callback: v => v.toFixed(1) + 'M' } }
-            }
-          }
-        });
-      } else {
-        priceChart = new Chart(ctx, {
-          type: 'line',
-          data: {
-            labels,
-            datasets: [
-              { label: 'Close', data: close, borderColor: '#4a9eff', backgroundColor: 'rgba(74,158,255,0.06)', fill: true, tension: 0.3, pointRadius: 0, borderWidth: 2 },
-              { label: 'High', data: data.high, borderColor: 'rgba(0,245,160,0.2)', tension: 0.3, pointRadius: 0, borderWidth: 1, borderDash: [3, 3] },
-              { label: 'Low', data: data.low, borderColor: 'rgba(255,64,96,0.2)', tension: 0.3, pointRadius: 0, borderWidth: 1, borderDash: [3, 3] }
-            ]
-          },
-          options: {
-            responsive: true, maintainAspectRatio: false,
-            interaction: { mode: 'index', intersect: false },
-            plugins: {
-              legend: { labels: { color: '#666', boxWidth: 10, padding: 8, font: { size: 10 } } },
-              tooltip: {
-                backgroundColor: 'rgba(13,13,22,0.95)', titleColor: '#fff', bodyColor: '#b0b0c0',
-                borderColor: 'rgba(255,255,255,0.08)', borderWidth: 1, padding: 10,
-                callbacks: { label: ctx => `${ctx.dataset.label}: $${ctx.parsed.y.toFixed(2)}` }
-              }
-            },
-            scales: {
-              x: { grid: { display: false }, ticks: { color: '#555', maxTicksLimit: 10, font: { size: 10 } } },
-              y: { position: 'right', grid: { color: 'rgba(255,255,255,0.03)' }, ticks: { color: '#4a9eff', font: { size: 10 }, callback: v => '$' + v.toFixed(0) } }
-            }
-          }
-        });
+function setTag(id, text, cls) {
+  const el = document.getElementById(id);
+  el.textContent = text;
+  el.className = 'tag text-xs ' + (cls || 'tag-neutral');
+}
+
+function renderMiniChart(data) {
+  const ctx = document.getElementById('priceChart').getContext('2d');
+  if (priceChart) priceChart.destroy();
+  if (!data.close || !data.close.length) return;
+  const labels = data.dates || [];
+  const close = data.close || [];
+  priceChart = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: labels.slice(-60),
+      datasets: [{
+        label: 'Close', data: close.slice(-60),
+        borderColor: '#4a9eff', backgroundColor: 'rgba(74,158,255,0.06)',
+        fill: true, tension: 0.3, pointRadius: 0, borderWidth: 2,
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false, animation: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { grid: { display: false }, ticks: { color: '#555', maxTicksLimit: 6, font: { size: 9 } } },
+        y: { position: 'right', grid: { color: 'rgba(255,255,255,0.03)' }, ticks: { color: '#4a9eff', font: { size: 9 }, callback: v => '$' + v.toFixed(0) } }
       }
     }
+  });
+}
 
-    function setChartType(type) {
-      chartType = type;
-      document.querySelectorAll('[id^="chart-"]').forEach(b => b.classList.remove('active'));
-      document.getElementById('chart-' + type).classList.add('active');
-      if (currentData) renderChart(currentData);
-    }
-
-    function setStatus(text, color) {
-      document.getElementById('status-dot').style.background = color;
-      document.getElementById('status-text').textContent = text;
-    }
-
-    async function analyze() {
-      const ticker = document.getElementById('ticker').value || 'AAPL';
-      const date = document.getElementById('date').value || new Date().toISOString().split('T')[0];
-
-      document.getElementById('analysis-area').classList.remove('hidden');
-      document.getElementById('analysis-loading').classList.remove('hidden');
-      document.getElementById('sections-wrapper').classList.add('hidden');
-      document.getElementById('signal-area').classList.add('hidden');
-      document.getElementById('stats-row').classList.add('hidden');
-      document.getElementById('analyze-btn').disabled = true;
-      document.getElementById('analyze-btn').innerHTML = `<svg class="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg> Analyzing...`;
-      setStatus('Analyzing', '#4a9eff');
-      analysisStart = Date.now();
-      await loadChart();
-
-      try {
-        const r = await fetch(`/api/analyze?ticker=${encodeURIComponent(ticker)}&date=${date}`);
-        const data = await r.json();
-        const elapsed = ((Date.now() - analysisStart) / 1000).toFixed(0);
-
-        document.getElementById('analysis-loading').classList.add('hidden');
-        document.getElementById('sections-wrapper').classList.remove('hidden');
-        document.getElementById('stats-row').classList.remove('hidden');
-
-        // Stats
-        const dec = (data.decision || '').toLowerCase();
-        const decEl = document.getElementById('stat-decision');
-        if (dec.includes('buy')) { decEl.textContent = 'BUY'; decEl.className = 'text-lg font-bold tag-buy'; }
-        else if (dec.includes('sell')) { decEl.textContent = 'SELL'; decEl.className = 'text-lg font-bold tag-sell'; }
-        else { decEl.textContent = 'HOLD'; decEl.className = 'text-lg font-bold tag-hold'; }
-        document.getElementById('stat-ticker').textContent = data.ticker;
-        document.getElementById('stat-date').textContent = data.date;
-        document.getElementById('stat-time').textContent = `${elapsed}s`;
-
-        // Signal
-        if (data.signal) {
-          document.getElementById('signal-area').classList.remove('hidden');
-          const s = data.signal;
-          const aEl = document.getElementById('sig-action');
-          if (s.action === 'BUY') { aEl.textContent = 'BUY'; aEl.className = 'text-xl font-bold tag-buy'; }
-          else if (s.action === 'SELL') { aEl.textContent = 'SELL'; aEl.className = 'text-xl font-bold tag-sell'; }
-          else { aEl.textContent = s.action || '—'; aEl.className = 'text-xl font-bold tag-hold'; }
-          document.getElementById('sig-entry').textContent = s.entry || '—';
-          document.getElementById('sig-sl').textContent = s.stop_loss || '—';
-          document.getElementById('sig-tp').textContent = s.take_profit || '—';
-          document.getElementById('sig-confidence').textContent = s.confidence || '—';
-          document.getElementById('sig-reason').textContent = s.reason ? `Why: ${s.reason}` : '';
-        }
-        buildTabs(data);
-      } catch(e) {
-        document.getElementById('analysis-loading').classList.add('hidden');
-        document.getElementById('sections-wrapper').classList.remove('hidden');
-        document.getElementById('section-content').innerHTML = `<div class="text-red-400 p-4">Error: ${e.message}</div>`;
-      }
-      document.getElementById('analyze-btn').disabled = false;
-      document.getElementById('analyze-btn').innerHTML = `<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg> Analyze`;
-      setStatus('Ready', '#00f5a0');
-    }
-
-    function buildTabs(data) {
-      const tabs = document.getElementById('section-tabs');
-      const content = document.getElementById('section-content');
-      const sections = [];
-
-      // Analyst Team
-      const analysts = [
-        { key: 'market_report', label: 'Market', icon: '📊' },
-        { key: 'sentiment_report', label: 'Sentiment', icon: '💬' },
-        { key: 'news_report', label: 'News', icon: '📰' },
-        { key: 'fundamentals_report', label: 'Fundamentals', icon: '📈' },
-      ];
-      for (const a of analysts) {
-        if (data[a.key]) sections.push({ id: a.key, label: a.label, icon: a.icon, content: data[a.key].content });
-      }
-
-      // Research Team
-      if (data.research) {
-        const parts = data.research.map(r => `### ${r.type}\n${r.content}`).join('\n\n---\n\n');
-        sections.push({ id: 'research', label: 'Research', icon: '🔬', content: parts });
-      }
-
-      // Trader
-      if (data.trader) sections.push({ id: 'trader', label: 'Trader', icon: '💼', content: data.trader });
-
-      // Risk
-      if (data.risk) {
-        const parts = data.risk.map(r => `### ${r.type}\n${r.content}`).join('\n\n---\n\n');
-        sections.push({ id: 'risk', label: 'Risk & Portfolio', icon: '🛡️', content: parts });
-      }
-
-      tabs.innerHTML = sections.map((s, i) =>
-        `<button class="btn-secondary text-xs px-3 py-1.5 ${i === 0 ? 'active' : ''}" onclick="showSection(${i})">${s.icon} ${s.label}</button>`
-      ).join('');
-      window._sections = sections;
-      if (sections.length) showSection(0);
-    }
-
-    function showSection(idx) {
-      const sections = window._sections || [];
-      document.querySelectorAll('#section-tabs .btn-secondary').forEach((b, i) => b.classList.toggle('active', i === idx));
-      document.getElementById('section-content').innerHTML = sections[idx] ? md(sections[idx].content) : '<p class="text-gray-500 italic p-4">No content</p>';
-    }
-
-    function md(text) {
-      if (!text) return '<p class="text-gray-500 italic p-4">No content</p>';
-      let h = text
-        .replace(/</g, '&lt;').replace(/>/g, '&gt;')
-        .replace(/### (.*)/g, '<h3>$1</h3>')
-        .replace(/## (.*)/g, '<h2>$1</h2>')
-        .replace(/# (.*)/g, '<h1>$1</h1>')
-        .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-        .replace(/\*(.*?)\*/g, '<em>$1</em>')
-        .replace(/```(\w*)\n([\s\S]*?)```/g, '<pre><code>$2</code></pre>')
-        .replace(/`([^`]+)`/g, '<code>$1</code>')
-        .replace(/^- (.*)/gm, '<li>$1</li>')
-        .replace(/(<li>.*\n?)+/g, '<ul>$&</ul>')
-        .replace(/^\|(.+)\|$/gm, m => {
-          if (m.includes('---')) return '';
-          return '<tr>' + m.split('|').filter(c => c.trim()).map(c => `<td>${c.trim()}</td>`).join('') + '</tr>';
-        })
-        .replace(/(<tr>.*<\/tr>\n?)+/g, '<table>$&</table>')
-        .replace(/\n\n/g, '</p><p>')
-        .replace(/\n/g, '<br>');
-      return '<p>' + h.replace(/<p><\/p>/g, '').replace(/<p><br><\/p>/g, '') + '</p>';
-    }
-  </script>
+document.addEventListener('DOMContentLoaded', loadStocks);
+</script>
 </body>
 </html>

@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Stock Analyzer — Sign In</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = { darkMode: 'class', theme: { extend: { colors: { dark: { 900: '#0a0a0f', 800: '#0d0d16', 700: '#12121e', 600: '#1a1a2e', 500: '#252540' }, accent: { green: '#00f5a0', red: '#ff4060', blue: '#4a9eff', gold: '#ffd700' } } } } }
+  </script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Inter', sans-serif; background: #0a0a0f; min-height: 100vh; display: flex; align-items: center; justify-content: center; }
+    .glass { background: rgba(13,13,22,0.85); backdrop-filter: blur(24px); border: 1px solid rgba(255,255,255,0.06); }
+    .gradient-text { background: linear-gradient(135deg, #4a9eff, #00f5a0); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    .input-field { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); color: #fff; width: 100%; padding: 14px 16px; border-radius: 12px; font-size: 15px; outline: none; transition: all 0.2s; }
+    .input-field:focus { border-color: rgba(74,158,255,0.4); box-shadow: 0 0 0 3px rgba(74,158,255,0.08); }
+    .input-field::placeholder { color: #444; }
+    .btn-primary { background: linear-gradient(135deg, #4a9eff, #3a7bdd); color: white; padding: 14px 32px; border-radius: 12px; font-weight: 600; border: none; cursor: pointer; transition: all 0.3s; width: 100%; font-size: 15px; }
+    .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 4px 24px rgba(74,158,255,0.35); }
+    .btn-primary:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+    .bg-glow { position: fixed; width: 600px; height: 600px; border-radius: 50%; filter: blur(120px); opacity: 0.08; pointer-events: none; }
+  </style>
+</head>
+<body>
+  <div class="bg-glow" style="background:#4a9eff;top:-200px;left:-200px"></div>
+  <div class="bg-glow" style="background:#00f5a0;bottom:-200px;right:-200px"></div>
+  <div class="glass rounded-3xl p-8 w-full max-w-sm mx-4 relative">
+    <div class="text-center mb-8">
+      <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-accent-blue to-accent-green flex items-center justify-center mx-auto mb-4">
+        <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/></svg>
+      </div>
+      <h1 class="text-2xl font-bold gradient-text">Stock Analyzer</h1>
+      <p class="text-gray-500 text-sm mt-1.5">AI-Powered Quantitative Equity Research</p>
+    </div>
+    <div id="error" class="hidden text-sm text-center mb-4 bg-accent-red/10 border border-accent-red/20 rounded-xl py-2.5 px-4 text-accent-red"></div>
+    <form id="login-form" onsubmit="return doLogin(event)">
+      <div class="mb-1">
+        <label class="text-[10px] text-gray-500 uppercase tracking-wider font-semibold block mb-1.5">Password</label>
+        <input id="password" type="password" class="input-field" placeholder="Enter your password" autofocus>
+      </div>
+      <button type="submit" id="login-btn" class="btn-primary mt-5 flex items-center justify-center gap-2">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"/></svg>
+        Sign In
+      </button>
+    </form>
+    <p class="text-gray-700 text-xs text-center mt-6">Not financial advice · For informational purposes only</p>
+  </div>
+  <script>
+    async function doLogin(e) {
+      e.preventDefault();
+      const pw = document.getElementById('password').value;
+      const btn = document.getElementById('login-btn');
+      const err = document.getElementById('error');
+      btn.disabled = true;
+      btn.innerHTML = '<svg class="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg> Signing in...';
+      err.classList.add('hidden');
+      try {
+        const r = await fetch('/api/login?password=' + encodeURIComponent(pw), { method: 'POST' });
+        const d = await r.json();
+        if (!r.ok) throw new Error(d.detail || 'Invalid password');
+        localStorage.setItem('auth_token', d.token);
+        window.location.href = '/';
+      } catch(e) {
+        err.textContent = e.message;
+        err.classList.remove('hidden');
+        btn.disabled = false;
+        btn.innerHTML = '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"/></svg> Sign In';
+      }
+    }
+  </script>
+</body>
+</html>
